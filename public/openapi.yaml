@@ -1,0 +1,56 @@
+openapi: 3.0.1
+info:
+  title: BROWSER Plugin
+  description: A plugin that allows the user to perform searches using ChatGPT. If you are not sure about the search query, ask them first before making queries to the plugin.
+  version: "v1"
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/browse?q={query}:
+    get:
+      operationId: getSearches
+      summary: Get the list of search results
+      parameters:
+        - in: path
+          q: query
+          schema:
+            type: string
+          required: true
+          description: The search query text.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/getSearchesResponse"
+
+components:
+  schemas:
+    getSearchesResponse:
+      type: object
+      properties:
+        results:
+          description: The list of search results.
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                description: search result title
+                type: string
+              description:
+                description: search result description
+                type: string
+              rawDescription:
+                description: search result raw description
+                type: string
+              hostname:
+                description: search result from host
+                type: string
+              icon:
+                description: host url icon
+                type: string
+              url:
+                description: search result source url
+                type: string

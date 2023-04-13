@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "BROWSER Plugin (no auth)",
+  "name_for_model": "browser",
+  "description_for_human": "Plugin for performing search, to retrieve real-time information. Useful for when you need to answer questions about current events.",
+  "description_for_model": "Plugin for performing search, to retrieve real-time information. Useful for when you need to answer questions about current events.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "http://localhost:3000/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "http://localhost:3000/logo.png",
+  "contact_email": "hey@lohxt.space",
+  "legal_info_url": "https://lohxt.space/legal"
+}

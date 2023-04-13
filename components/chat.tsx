@@ -20,7 +20,7 @@ export function Chat() {
 
     // if a previous message is edited and submitted, ignore all the following messages.
     let _index = index >= 0 ? index : 1000;
-    let _messages = messages.slice(0, _index + 1);
+    let _messages = messages.slice(0, _index);
 
     // append the new/edited message to the list of messages
     const newMessages = [
@@ -42,6 +42,7 @@ export function Chat() {
       body: JSON.stringify({
         messages: last10messages,
         apikey,
+        browse: true,
       }),
     });
 
@@ -82,6 +83,75 @@ export function Chat() {
       setLoading(false);
     }
   };
+
+  const browse = async () => {
+    setLoading(true);
+
+    let newMessages = messages.slice(0, -1);
+    // update the store
+    setHistory(newMessages);
+
+    // last 10 messages will be sent for context
+    const last10messages = newMessages.slice(-10);
+
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: last10messages,
+        apikey,
+        browse: true,
+      }),
+    });
+
+    console.log("Edge function returned.");
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    // This data is a ReadableStream
+    const data = response.body;
+    if (!data) {
+      return;
+    }
+
+    const reader = data.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+
+    let lastMessage = "";
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      const chunkValue = decoder.decode(value);
+
+      lastMessage = lastMessage + chunkValue;
+
+      let _messages = [
+        ...newMessages,
+        { role: "assistant", content: lastMessage } as ChatGPTMessage,
+      ];
+
+      // update the store
+      setHistory(_messages);
+
+      // reset loading status
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let lastMessage = messages.slice(-1)[0]?.content;
+    if (lastMessage && lastMessage.includes("BROWSE") && !loading) {
+      let _messages = messages.slice(0, -1);
+      console.log("BROWSE", _messages, messages);
+      browse();
+    }
+  }, [messages, loading]);
 
   return (
     <div className="relative flex h-full max-w-full flex-1 flex-col items-center justify-center">

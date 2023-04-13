@@ -68,7 +68,7 @@ export async function OpenAIStream(payload: OpenAIStreamPayload) {
               return;
             }
             const queue = encoder.encode(text);
-            console.log("chunk", text);
+            // console.log("chunk", json, text);
             controller.enqueue(queue);
             counter++;
           } catch (e) {

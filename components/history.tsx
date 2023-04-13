@@ -25,7 +25,7 @@ const History = (props) => {
   return (
     <div
       className={cn(
-        "absolute top-0 left-0 z-10 flex h-full w-full flex-col border-r border-gray-100 bg-white dark:border-gray-900 dark:bg-black md:relative md:w-[250px]",
+        "absolute top-0 left-0 z-10 flex h-full w-full flex-col overflow-auto border-r border-gray-100 bg-white dark:border-gray-900 dark:bg-black md:relative md:w-[250px]",
       )}
     >
       <div className="flex justify-between border-b border-gray-100 py-4 px-2 text-gray-700 dark:border-gray-900 dark:text-gray-300">
@@ -62,19 +62,21 @@ const History = (props) => {
           </svg>
         </div>
       )}
-      {Object.keys(history).map((h) => (
-        <div className="flex flex-row border-b border-gray-100 py-2 px-2 text-sm dark:border-gray-900">
-          <label className="w-full cursor-pointer" onClick={_handleClick(h)}>
-            {history[h][0]?.content}
-          </label>
-          <button
-            className="ml-2 flex cursor-pointer align-baseline"
-            onClick={_handleDelete(h)}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+      {Object.keys(history)
+        .reverse()
+        .map((h) => (
+          <div className="flex h-[50px] flex-row overflow-clip border-b border-gray-100 py-2 px-2 text-sm dark:border-gray-900">
+            <label className="w-full cursor-pointer" onClick={_handleClick(h)}>
+              {history[h][0]?.content}
+            </label>
+            <button
+              className="ml-2 flex cursor-pointer align-baseline"
+              onClick={_handleDelete(h)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
     </div>
   );
 };
