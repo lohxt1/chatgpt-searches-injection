@@ -4,9 +4,9 @@
 <img align="center" src="https://lohxt1.github.io/_assets/chatminimal1.png" alt="chat minimal 1"/>
 <br />
 <br />
-<img align="center" src="https://lohxt1.github.io/_assets/chatminimal2.png" alt="chat minimal 2"/>
+<img align="center" src="https://lohxt1.github.io/_assets/searchesinj.png" alt="chat minimal 2"/>
 <h1>
-minimal ~ chat - gpt
+~ chatgpt-searches-injection ~
 </h1>
   <a href="https://github.com/trpc/trpc/blob/main/LICENSE">
     <img alt="MIT License" src="https://img.shields.io/github/license/trpc/trpc" />
