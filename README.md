@@ -12,7 +12,7 @@ minimal ~ chat - gpt
     <img alt="MIT License" src="https://img.shields.io/github/license/trpc/trpc" />
   </a>
 <p align="center" style="font-weight:400;font-size:20px;">
-  Minimalistic customizable chat gpt interface. Faster than chatGPT.
+  Minimalistic chat gpt interface with an ability to browse internet. WIP
 </p>
 </div>
 
@@ -21,7 +21,6 @@ minimal ~ chat - gpt
 - [Next.js](https://nextjs.org/) – `framework`
 - [Typescript](https://www.typescriptlang.org/) – `language`
 - [Tailwind](https://tailwindcss.com/) – `CSS`
-- [framer-motion](https://framer.com) – `Animation`
 - [Vercel](https://vercel.com/) – `hosting`
 
 ## Running the code locally
@@ -30,8 +29,8 @@ To run the code locally, open _Terminal_ in your `projects` folder and take the 
 
 ```bash
 # STEP 1: Get sources from GitHub
-$ git clone https://github.com/lohxt1/minimal-chat-gpt.git
-$ cd minimal-chat-gpt
+$ git clone https://github.com/lohxt1/chatgpt-searches-injection.git
+$ cd chatgpt-searches-injection
 
 # STEP 2: Install the requirements
 $ npm install
