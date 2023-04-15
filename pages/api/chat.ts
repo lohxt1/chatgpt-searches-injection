@@ -1,4 +1,3 @@
-import { SafeSearchType, search } from "duck-duck-scrape";
 import { ChatGPTMessage } from "@/components/chatBlock";
 import { OpenAIStream, OpenAIStreamPayload } from "@/utils/openaiStream";
 
@@ -8,20 +7,13 @@ export const config = {
 
 const handler = async (req: Request): Promise<Response> => {
   const body = await req.json();
+  const authorization = req.headers.get("Authorization");
+  const apiKey = authorization.split(" ")[1];
 
   // break the app if the API key is missing
-  if (!body?.apikey) {
+  if (!apiKey) {
     throw new Error("Missing OPENAI_API_KEY");
   }
-
-  const pluginPrompt = {
-    role: "user",
-    content: `Answer the following questions as best you can. You have access to the following tools.
-    BROWSER Plugin
-    Plugin for performing search, to retrieve real-time information. Useful for when you need to answer questions about current events.
-
-    If you need real-time information about current events. REPLY WITH THE WORD 'BROWSE' IF YOU WANT TO USE THE PLUGIN.`,
-  };
 
   const messages: ChatGPTMessage[] = [
     {
@@ -32,8 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
       AI is a well-behaved and well-mannered individual.
       AI is always friendly, kind, and inspiring, and he is eager to provide vivid and thoughtful responses to the user.
       AI has the sum of all knowledge in their brain, and is able to accurately answer nearly any question about any topic in conversation.
-      
-      ${pluginPrompt?.content}`,
+      YOU HAVE ACCESS TO THE INTERNET.`,
     },
   ];
   messages.push(...body?.messages);
@@ -47,28 +38,50 @@ const handler = async (req: Request): Promise<Response> => {
     content: `${latestMessage?.content}`,
   };
 
-  if (!body?.browse) {
-    _messages = [..._messages.slice(0, -1), latestMessage];
-  } else {
-    const _m = messages.filter((_) => _?.role == "user").map((_) => _?.content);
-    // .join(". ");
-    console.log(_m);
-    const ddg = await fetch(
-      `http://127.0.0.1:3000/api/browse?q=${_m.slice(-1)[0]}`,
-      {
-        method: "GET",
-      },
-    ).then((res) => res.json());
+  // Create a rephrased version (with context) of the latest question.
+  const chatSequence = _messages
+    .slice(0, -1)
+    .filter((_) => _?.role != "system")
+    .map((_) => _?.content)
+    .join("\n");
 
-    let searchContext = {
-      role: "user",
-      content: `Knowledge base:
-    ${JSON.stringify(ddg)}`,
-    };
-    _messages = [..._messages.slice(0, -1), searchContext, latestMessage];
+  const toRephraseString = `
+  {
+    "previous_questions": [
+      ${chatSequence}
+    ],
+    "question": ${latestMessage?.content},
   }
+  rephrased_question_with_context:
+  \n 
+  `;
 
-  console.log(body, _messages);
+  const rephrasedQuestion = await fetch(`${body?.host}api/rephrase`, {
+    method: "POST",
+    body: JSON.stringify({ toRephraseString }),
+  }).then((res) => res.json());
+
+  // Get search results for the rephrased question.
+  const ddg = await fetch(
+    `${body?.host}api/browse?q=${rephrasedQuestion?.text.trim()}`,
+    {
+      method: "GET",
+    },
+  ).then((res) => res.json());
+
+  let searchContext = {
+    role: "system",
+    content: `Knowledge base for the question '${latestMessage?.content}'.
+      You don't need it. But you can use if required:
+      ${"```"}
+      ${ddg.map((_) => _?.description).join("\n")}
+      ${"```"}`,
+  };
+
+  // Final prompt
+  _messages = [searchContext, ..._messages.slice(0, -1), latestMessage];
+
+  console.log(rephrasedQuestion?.text, _messages);
 
   const payload: OpenAIStreamPayload = {
     model: "gpt-3.5-turbo",
@@ -83,10 +96,65 @@ const handler = async (req: Request): Promise<Response> => {
     stream: true,
     user: body?.user,
     n: 1,
-    apikey: body?.apikey,
+    apikey: apiKey,
   };
 
   const stream = await OpenAIStream(payload);
   return new Response(stream);
 };
+
 export default handler;
+
+const rephraseTemplate = `Your job is to rephrase the given question by adding more context based on a set of previous questions
+
+  FOLLOW THE BELOW TEMPLATE
+  """
+  Example 1:
+  <>
+  {
+    "previous_questions": [
+        "Who won ufc 287 ?"
+    ],
+    "question": "Where was it held at ?",
+  }
+  rephrased_question_with_context:
+  Where was ufc 287 held at ?
+  </>
+  
+  Example 2:
+  <>
+  {
+    "previous_questions": [
+        "Who won yesterdays timberwolves vs lakers match ?",
+        "The most recent Timberwolves vs Lakers game was on October 28, 2022, and the Lakers won with a score of 108-102.",
+    ],
+    "question": "How much did they win by ?",
+  }
+  rephrased_question_with_context:How much did the Lakers win by in the Timberwolves vs Lakers match on October 28, 2022 ?
+  </>
+  
+  Example 3:
+  <>
+  {
+    "previous_questions": [
+        "Who won ufc 287 ?",
+        "In the UFC 287 main event, Israel Adesanya defeated Alex Pereira by knockout at 4:21 of Round 2 to win the UFC middleweight championship.",
+    ],
+    "question": "How did Israel win ?",
+  }
+  rephrased_question_with_context:How did Israel win in ufc 287 ?
+  </>
+  
+  Example 4:
+  <>
+  {
+    "previous_questions": [
+        "Who won ufc 287 ?",
+        "In the UFC 287 main event, Israel Adesanya defeated Alex Pereira by knockout at 4:21 of Round 2 to win the UFC middleweight championship.",
+    ],
+    "question": "Who won in the previous ufc event ?",
+  }
+  rephrased_question_with_context:Who won in ufc 286 ?
+  </>
+  """
+  `;

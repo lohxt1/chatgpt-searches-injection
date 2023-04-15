@@ -7,7 +7,8 @@ export function Chat() {
   const [loading, setLoading] = useState(false);
 
   const { apikey } = useKeyStore();
-  const { setCurrentChatId, messages, setHistory } = useHistoryStore();
+  const { setCurrentChatId, messages, setHistory, currentChatId } =
+    useHistoryStore();
 
   useEffect(() => {
     // Initiate new chat
@@ -38,11 +39,13 @@ export function Chat() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${apikey ?? ""}`,
       },
       body: JSON.stringify({
         messages: last10messages,
-        apikey,
         browse: true,
+        host: window.location.href,
+        chatId: currentChatId,
       }),
     });
 
@@ -83,75 +86,6 @@ export function Chat() {
       setLoading(false);
     }
   };
-
-  const browse = async () => {
-    setLoading(true);
-
-    let newMessages = messages.slice(0, -1);
-    // update the store
-    setHistory(newMessages);
-
-    // last 10 messages will be sent for context
-    const last10messages = newMessages.slice(-10);
-
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: last10messages,
-        apikey,
-        browse: true,
-      }),
-    });
-
-    console.log("Edge function returned.");
-
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-
-    // This data is a ReadableStream
-    const data = response.body;
-    if (!data) {
-      return;
-    }
-
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-
-    let lastMessage = "";
-
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      const chunkValue = decoder.decode(value);
-
-      lastMessage = lastMessage + chunkValue;
-
-      let _messages = [
-        ...newMessages,
-        { role: "assistant", content: lastMessage } as ChatGPTMessage,
-      ];
-
-      // update the store
-      setHistory(_messages);
-
-      // reset loading status
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let lastMessage = messages.slice(-1)[0]?.content;
-    if (lastMessage && lastMessage.includes("BROWSE") && !loading) {
-      let _messages = messages.slice(0, -1);
-      console.log("BROWSE", _messages, messages);
-      browse();
-    }
-  }, [messages, loading]);
 
   return (
     <div className="relative flex h-full max-w-full flex-1 flex-col items-center justify-center">
@@ -225,16 +159,15 @@ const InputMessage = ({ sendMessage }: any) => {
 
   return (
     <div className="clear-both mb-2 flex w-full md:mb-0 md:mt-6">
-      <input
-        type="text"
+      <textarea
         aria-label="chat input"
         required
         placeholder="Send a message..."
-        className="ml-2 min-w-0 flex-auto appearance-none border border-gray-200 bg-white px-3 py-[calc(theme(spacing.2)-1px)] shadow-md shadow-zinc-800/5 placeholder:text-zinc-400 focus:outline-none dark:border-gray-900 dark:border-gray-900 dark:bg-black sm:text-sm"
+        className="ml-2 h-[32px] min-w-0 flex-auto appearance-none border border-gray-200 bg-white px-3 py-[calc(theme(spacing.2)-1px)] shadow-md shadow-zinc-800/5 placeholder:text-zinc-400 focus:outline-none dark:border-gray-900 dark:border-gray-900 dark:bg-black sm:text-sm"
         value={input}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && input.length > 0) {
-            sendMessage(input);
+          if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
+            sendMessage(input.trimStart());
             setInput("");
           }
         }}
@@ -248,7 +181,7 @@ const InputMessage = ({ sendMessage }: any) => {
         disabled={input.length <= 0}
         onClick={() => {
           if (input.length <= 0) return;
-          sendMessage(input);
+          sendMessage(input.trimStart());
           setInput("");
         }}
       >

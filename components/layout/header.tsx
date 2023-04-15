@@ -32,7 +32,12 @@ const Header: React.FC = () => {
           "z-10",
         )}
       >
-        <pre className="md:text-md text-xs italic">chatGPT ~ minimal</pre>
+        <div className="md:text-md flex flex-col text-xs italic md:flex-row">
+          <pre>chatGPT ~ minimal</pre>
+          <pre className="text-xs text-[8px] md:ml-2 md:text-xs">
+            (browsing enabled)
+          </pre>
+        </div>
         <div
           className={cn(
             "flex w-fit items-center justify-between align-middle",
