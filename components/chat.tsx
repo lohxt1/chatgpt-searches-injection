@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useHistoryStore } from "stores/history";
 import { useKeyStore } from "stores/key";
+import { cn } from "@/utils/tailwind";
 import { ChatBlock, type ChatGPTMessage } from "./chatBlock";
 
 export function Chat() {
   const [loading, setLoading] = useState(false);
 
   const { apikey } = useKeyStore();
-  const { setCurrentChatId, messages, setHistory, currentChatId } =
-    useHistoryStore();
+  const {
+    setCurrentChatId,
+    messages,
+    setHistory,
+    currentChatId,
+    toggleBrowse,
+    browse,
+  } = useHistoryStore();
 
   useEffect(() => {
     // Initiate new chat
@@ -43,7 +50,7 @@ export function Chat() {
       },
       body: JSON.stringify({
         messages: last10messages,
-        browse: true,
+        browse,
         host: window.location.href,
         chatId: currentChatId,
       }),
@@ -110,7 +117,11 @@ export function Chat() {
           <ScrollToBlock loading={loading} messages={messages} />
         </div>
         <div className="align-center h-18 absolute bottom-0 left-0 flex w-full items-center justify-center border-t border-gray-100 bg-white pt-2 dark:border-gray-900 dark:bg-black md:h-24">
-          <InputMessage sendMessage={sendMessage} />
+          <InputMessage
+            sendMessage={sendMessage}
+            browse={browse}
+            toggleBrowse={toggleBrowse}
+          />
         </div>
       </div>
     </div>
@@ -154,7 +165,7 @@ const ScrollToBlock = (props) => {
   return <div className="relative flex h-[1px] w-full" ref={ref}></div>;
 };
 
-const InputMessage = ({ sendMessage }: any) => {
+const InputMessage = ({ sendMessage, browse, toggleBrowse }: any) => {
   const [input, setInput] = useState("");
 
   return (
@@ -176,6 +187,14 @@ const InputMessage = ({ sendMessage }: any) => {
         }}
       />
       <button
+        className="mx-2 flex-none"
+        onClick={() => {
+          toggleBrowse();
+        }}
+      >
+        <World browse={browse} />
+      </button>
+      <button
         type="submit"
         className="mx-2 flex-none"
         disabled={input.length <= 0}
@@ -188,5 +207,21 @@ const InputMessage = ({ sendMessage }: any) => {
         →
       </button>
     </div>
+  );
+};
+
+const World = ({ browse }) => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="-0.06 -0.06 0.72 0.72"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M.068.24A.24.24 0 0 0 .06.3c0 .021.003.041.008.06h.085a.595.595 0 0 1 0-.12H.068zM.093.18h.07A.349.349 0 0 1 .197.084.241.241 0 0 0 .092.18zm.44.06H.447a.595.595 0 0 1 0 .12h.085a.241.241 0 0 0 0-.12zM.508.18A.241.241 0 0 0 .404.084.4.4 0 0 1 .438.18h.07zM.213.24A.533.533 0 0 0 .21.3c0 .021.001.041.003.06h.173a.533.533 0 0 0 0-.12H.213zM.224.18h.152A.323.323 0 0 0 .353.115C.334.077.313.06.3.06.287.06.266.077.248.115A.353.353 0 0 0 .225.18zM.092.42a.241.241 0 0 0 .104.096A.4.4 0 0 1 .162.42h-.07zm.416 0h-.07a.349.349 0 0 1-.034.096A.241.241 0 0 0 .508.42zm-.284 0a.353.353 0 0 0 .023.065C.266.523.287.54.3.54.313.54.334.523.352.485A.353.353 0 0 0 .375.42H.224zM.3.6a.3.3 0 1 1 0-.6.3.3 0 0 1 0 .6z"
+        className={cn(browse ? "fill-[#00f]" : "fill-[#333]")}
+      />
+    </svg>
   );
 };

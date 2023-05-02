@@ -31,57 +31,63 @@ const handler = async (req: Request): Promise<Response> => {
 
   let _messages = [...messages];
 
-  let latestMessage = _messages.slice(-1)[0];
-
-  latestMessage = {
-    role: "user",
-    content: `${latestMessage?.content}`,
-  };
-
-  // Create a rephrased version (with context) of the latest question.
-  const chatSequence = _messages
-    .slice(0, -1)
-    .filter((_) => _?.role != "system")
-    .map((_) => _?.content)
-    .join("\n");
-
-  const toRephraseString = `
-  {
-    "previous_questions": [
-      ${chatSequence}
-    ],
-    "question": ${latestMessage?.content},
-  }
-  rephrased_question_with_context:
-  \n 
-  `;
-
-  const rephrasedQuestion = await fetch(`${body?.host}api/rephrase`, {
-    method: "POST",
-    body: JSON.stringify({ toRephraseString }),
-  }).then((res) => res.json());
-
-  // Get search results for the rephrased question.
-  const ddg = await fetch(
-    `${body?.host}api/browse?q=${rephrasedQuestion?.text.trim()}`,
-    {
-      method: "GET",
-    },
-  ).then((res) => res.json());
-
-  let searchContext = {
-    role: "system",
-    content: `Knowledge base for the question '${latestMessage?.content}'.
-      You don't need it. But you can use if required:
-      ${"```"}
-      ${ddg.map((_) => _?.description).join("\n")}
-      ${"```"}`,
-  };
+  console.log("init", body, _messages);
 
   // Final prompt
-  _messages = [searchContext, ..._messages.slice(0, -1), latestMessage];
+  if (body?.browse) {
+    let latestMessage = _messages.slice(-1)[0];
 
-  console.log(rephrasedQuestion?.text, _messages);
+    latestMessage = {
+      role: "user",
+      content: `${latestMessage?.content}`,
+    };
+
+    // Create a rephrased version (with context) of the latest question.
+    const chatSequence = _messages
+      .slice(0, -1)
+      .filter((_) => _?.role != "system")
+      .map((_) => _?.content)
+      .join("\n");
+
+    const toRephraseString = `
+    {
+      "previous_questions": [
+        ${chatSequence}
+      ],
+      "question": ${latestMessage?.content},
+    }
+    rephrased_question_with_context:
+    \n 
+    `;
+
+    const rephrasedQuestion = await fetch(`${body?.host}api/rephrase`, {
+      method: "POST",
+      body: JSON.stringify({ toRephraseString }),
+    }).then((res) => res.json());
+
+    console.log("rephrased", rephrasedQuestion);
+
+    // Get search results for the rephrased question.
+    const ddg = await fetch(
+      `${body?.host}api/browse?q=${rephrasedQuestion?.text.trim()}`,
+      {
+        method: "GET",
+      },
+    ).then((res) => res.json());
+
+    let searchContext = {
+      role: "system",
+      content: `Knowledge base for the question '${latestMessage?.content}'.
+        You don't need it. But you can use if required:
+        ${"```"}
+        ${ddg.map((_) => _?.description).join("\n")}
+        ${"```"}`,
+    };
+
+    _messages = [searchContext, ..._messages.slice(0, -1), latestMessage];
+
+    console.log(rephrasedQuestion?.text, _messages);
+  }
 
   const payload: OpenAIStreamPayload = {
     model: "gpt-3.5-turbo",

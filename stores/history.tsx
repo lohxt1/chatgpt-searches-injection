@@ -3,6 +3,8 @@ import create from "zustand";
 import { persist } from "zustand/middleware";
 
 interface HistoryState {
+  browse: boolean;
+  toggleBrowse: () => void;
   currentChatId: string;
   setCurrentChatId: (val?) => void;
   history: any;
@@ -17,6 +19,12 @@ interface HistoryState {
 export const useHistoryStore = create<HistoryState>()(
   persist(
     (set) => ({
+      browse: false,
+      toggleBrowse: () => {
+        set((state) => ({
+          browse: !state.browse,
+        }));
+      },
       currentChatId: null,
       messages: [],
       showHistory: false,
